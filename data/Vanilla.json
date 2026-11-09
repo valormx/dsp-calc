@@ -6170,6 +6170,89 @@
       "TimeSpend": 600,
       "Proliferator": 1,
       "IconName": "accumulator-full"
+    },
+    {
+      "ID": 161,
+      "Type": 4,
+      "Factories": [
+        2303,
+        2304,
+        2305,
+        2318
+      ],
+      "Name": "黑雾引力透镜",
+      "Items": [
+        1209,
+        5201
+      ],
+      "ItemCounts": [
+        1,
+        12
+      ],
+      "Results": [
+        1211
+      ],
+      "ResultCounts": [
+        1
+      ],
+      "TimeSpend": 360.0,
+      "Proliferator": 3,
+      "IconName": "gravity-lens-lv2"
+    },
+    {
+      "ID": 162,
+      "Type": 4,
+      "Factories": [
+        2303,
+        2304,
+        2305,
+        2318
+      ],
+      "Name": "全息信标",
+      "Items": [
+        1101,
+        1111,
+        1401,
+        1301
+      ],
+      "ItemCounts": [
+        3,
+        4,
+        2,
+        2
+      ],
+      "Results": [
+        2320
+      ],
+      "ResultCounts": [
+        1
+      ],
+      "TimeSpend": 240.0,
+      "Proliferator": 3,
+      "IconName": "holographic-beacon"
+    },
+    {
+      "ID": 31208,
+      "Type": -1,
+      "Factories": [
+        2208
+      ],
+      "Name": "[射线接收带黑雾透镜]临界光子",
+      "Items": [
+        1211
+      ],
+      "ItemCounts": [
+        0.008333333333333333
+      ],
+      "Results": [
+        1208
+      ],
+      "ResultCounts": [
+        1
+      ],
+      "TimeSpend": 300.0,
+      "Proliferator": 4,
+      "IconName": "photon-capacitor-full"
     }
   ],
   "items": [
@@ -7467,6 +7550,20 @@
       "Speed": 10000.0,
       "MultipleOutput": 1,
       "Space": 0
+    },
+    {
+      "ID": 1211,
+      "Type": 3,
+      "Name": "黑雾引力透镜",
+      "GridIndex": 1707,
+      "IconName": "gravity-lens-lv2"
+    },
+    {
+      "ID": 2320,
+      "Type": 5,
+      "Name": "全息信标",
+      "GridIndex": 2314,
+      "IconName": "holographic-beacon"
     }
   ]
 }
