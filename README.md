@@ -53,3 +53,7 @@
 - [x] 桌面端应用
 - [x] 移动端UI适配 (基本完成，但可能还需要根据用户体验调整布局)
 - [ ] 游戏内插件
+
+## 项目来源
+
+本项目基于 [DSPCalculator/dsp-calc](https://github.com/DSPCalculator/dsp-calc) 的代码二次开发，在此感谢原项目作者及贡献者。
