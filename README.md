@@ -7,11 +7,7 @@
 
 ## 在线使用方式
 
-- 主站 (Netlify) https://dsp-calc.pro/ &emsp;&emsp; 分支/PR预览 https://b.dsp-calc.pro/
-
-- Github Pages: https://dspcalculator.github.io/dsp-calc/
-
-已经废弃的站点：~~https://shi-sang.gitee.io/dsp_calculator/~~
+- https://valormx.github.io/dsp-calc/
 
 ## 本地开发环境
 
