@@ -15,7 +15,7 @@ export function Header() {
             <Navbar.Toggle aria-controls="navbarNav"/>
             <Navbar.Collapse id="navbarNav">
                 <Nav>
-                    <Nav.Link href="https://github.com/DSPCalculator/dsp-calc">开源仓库</Nav.Link>
+                    <Nav.Link href="https://github.com/valormx/dsp-calc">开源仓库</Nav.Link>
                     <Nav.Link href="https://www.bilibili.com/read/readlist/rl630834" target="_blank">逻辑原理</Nav.Link>
                 </Nav>
 
