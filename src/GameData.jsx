@@ -52,7 +52,7 @@ export const game_data_info_list = [
     {
         "GUID": "Vanilla",
         "name": "原版游戏",
-        "version": "0.10.35.29104",
+        "version": "0.10.35.29151",
     },
     {
         "GUID": MoreMegaStructureGUID,
