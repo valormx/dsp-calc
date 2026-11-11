@@ -161,7 +161,9 @@ function LogisticsSettings() {
         <Select size="small" style={{minWidth: 225}} options={SORTER_OPTIONS}
                 value={settings.sorter_level} onChange={v => set_settings({sorter_level: v})}/>
         <span className="text-nowrap small text-muted">
-            当前：{belt.name} {belt.speed}/s · {sorter.name} {sorter.speed * sorter.stack}/s
+            当前：{belt.name} {belt.speed}/s · {sorter.auto
+                ? '分拣器按各产线设备等级自动匹配'
+                : `${sorter.name} ${sorter.speed * sorter.stack}/s`}
         </span>
     </div>;
 }

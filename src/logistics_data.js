@@ -14,6 +14,8 @@
  *      - 带速约束：N × 单台速率 ≤ 带速 → 该流最多串联 floor(带速 / 单台速率) 台。
  *      - 分拣器约束：单台速率 ≤ 分拣器速率；否则设备无法满速，必须升级分拣器等级。
  *   4. 整条产线的上限 = 各条流中最小的带上限，并单独注明瓶颈是哪条带。
+ *   5. 分拣器可选「自动」：每行按自身工厂速率选推荐档（高一档余量），
+ *      因为不同产线可能用不同等级的工厂，自动档按行计算而不改动全局设置。
  *
  * 注意：混带、多带并联、分拣器跨 2~3 格降速等情况不在估算范围内。
  */
@@ -36,17 +38,33 @@ export const SORTER_LEVELS = [
 export const DEFAULT_BELT_LEVEL = 3;
 export const DEFAULT_SORTER_LEVEL = 3;
 
+// value 0 = 自动：每条产线按自身工厂的物料速率匹配分拣器档位，并留一档余量。
+// 因为不同产线可能用不同等级的工厂，自动档按行计算，不改动全局设置。
+export const AUTO_SORTER_LEVEL = 0;
+export const AUTO_SORTER = {
+    value: AUTO_SORTER_LEVEL,
+    name: '自动（按设备匹配）',
+    icon: null,
+    speed: 0,
+    stack: 1,
+    auto: true
+};
+
 export const BELT_OPTIONS = BELT_LEVELS.map(x => ({value: x.value, label: `${x.name} · ${x.speed}/s`}));
-export const SORTER_OPTIONS = SORTER_LEVELS.map(x => ({
-    value: x.value,
-    label: `${x.name} · ${x.speed * x.stack}/s`
-}));
+export const SORTER_OPTIONS = [
+    {value: AUTO_SORTER_LEVEL, label: '自动 · 按设备等级匹配'},
+    ...SORTER_LEVELS.map(x => ({
+        value: x.value,
+        label: `${x.name} · ${x.speed * x.stack}/s`
+    }))
+];
 
 export function get_belt_level(value) {
     return BELT_LEVELS.find(x => x.value === Number(value)) || BELT_LEVELS[DEFAULT_BELT_LEVEL - 1];
 }
 
 export function get_sorter_level(value) {
+    if (Number(value) === AUTO_SORTER_LEVEL) return AUTO_SORTER;
     return SORTER_LEVELS.find(x => x.value === Number(value)) || SORTER_LEVELS[DEFAULT_SORTER_LEVEL - 1];
 }
 
@@ -59,7 +77,7 @@ export function get_sorter_level(value) {
  * @param {object} game_data     含 proliferator_effect
  * @param {object} settings     含 acc_rate / inc_rate
  * @param {object} belt         BELT_LEVELS 中的一项
- * @param {object} sorter       SORTER_LEVELS 中的一项
+ * @param {object} sorter       SORTER_LEVELS 中的一项，或 AUTO_SORTER（按行自动匹配）
  * @returns {object|null} 计算结果；无配方或数据异常时返回 null
  */
 export function compute_line_capacity(recipe, factory_info, scheme_recipe, game_data, settings, belt, sorter) {
@@ -100,7 +118,6 @@ export function compute_line_capacity(recipe, factory_info, scheme_recipe, game_
     if (flows.length === 0) return null;
 
     const belt_speed = belt.speed;
-    const sorter_speed = sorter.speed * sorter.stack;
 
     // 能喂饱某条流的最低分拣器档位；连最高档都不够时返回最高档。
     function min_sorter_for(rate) {
@@ -110,7 +127,6 @@ export function compute_line_capacity(recipe, factory_info, scheme_recipe, game_
 
     for (const flow of flows) {
         flow.belt_limit = flow.rate > 0 ? Math.floor(belt_speed / flow.rate + 1e-9) : Infinity;
-        flow.sorter_ok = flow.rate <= sorter_speed + 1e-9;
         flow.min_sorter = min_sorter_for(flow.rate);
     }
 
@@ -122,7 +138,6 @@ export function compute_line_capacity(recipe, factory_info, scheme_recipe, game_
     }
     if (!(bottleneck.rate > 0) || !Number.isFinite(belt_limit)) return null;
 
-    const limiting_flows = flows.filter(f => !f.sorter_ok);
     // 最低要求 = 所有流里要求最高的那一档；推荐档位再高一档，留出余量
     // （实践中 Mk.III 制造台不会只配刚好够用的分拣器，而是配极速分拣器）。
     const required_sorter = flows.reduce(
@@ -131,9 +146,20 @@ export function compute_line_capacity(recipe, factory_info, scheme_recipe, game_
     const suggested_sorter = SORTER_LEVELS.find(x => x.value === required_sorter.value + 1)
         || required_sorter;
 
+    // 自动档：本行按自身工厂速率采用推荐档位；手动档：使用全局选择的档位。
+    const sorter_auto = !!sorter.auto;
+    const effective_sorter = sorter_auto ? suggested_sorter : sorter;
+    const sorter_speed = effective_sorter.speed * effective_sorter.stack;
+    for (const flow of flows) {
+        flow.sorter_ok = flow.rate <= sorter_speed + 1e-9;
+    }
+    const limiting_flows = flows.filter(f => !f.sorter_ok);
+
     return {
         factory_name: factory_info['名称'],
         belt_speed,
+        sorter: effective_sorter,
+        sorter_auto,
         sorter_speed,
         flows,
         input_belt_count: Object.keys(recipe['原料'] || {}).length,

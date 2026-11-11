@@ -174,14 +174,15 @@ export function LogisticsCapacity({recipe, factory_info, scheme_recipe, game_dat
     if (!cap) return <span className="text-muted">—</span>;
 
     const limit_text = cap.belt_limit > 9999 ? '≥9999' : `≤ ${cap.belt_limit}`;
+    const sorter_label = `${cap.sorter_auto ? '自动 → ' : ''}${cap.sorter.name}`;
     const tooltip = [
         `传送带：${belt.name} ${cap.belt_speed} 个/s（每种原料各一条进料带，出料单独一条带）`,
         `瓶颈：${cap.bottleneck_item} ${cap.bottleneck_kind}带 ${cap.max_rate.toFixed(3)} 个/s`,
         `一条带最多串联 ${cap.belt_limit} 台 ${cap.factory_name}`,
         `共需 ${cap.input_belt_count} 条进料带 + ${cap.output_belt_count} 条出料带`,
-        `分拣器：${sorter.name} ${cap.sorter_speed} 个/s（1 格距离，每条流每台固定 1 个）`,
+        `分拣器：${sorter_label} ${cap.sorter_speed} 个/s（1 格距离，每条流每台固定 1 个）`,
         cap.sorter_ok
-            ? '当前分拣器可让设备满速'
+            ? (cap.sorter_auto ? '已按本行设备速率自动匹配，并留一档余量' : '当前分拣器可让设备满速')
             : `分拣器等级不足，设备无法满速；至少需 ${cap.required_sorter.name}，推荐 ${cap.suggested_sorter.name}`,
         '口径：各条流分别计算并取最小上限；混带、多带并联、2~3 格分拣器降速未计入。',
     ].join('\n');
@@ -199,7 +200,7 @@ export function LogisticsCapacity({recipe, factory_info, scheme_recipe, game_dat
         </small>
         <small className={`d-block logistics-detail ${cap.sorter_ok ? 'text-muted' : 'text-warning'}`}>
             {cap.sorter_ok
-                ? `${sorter.name} ${cap.sorter_speed}/s ✓`
+                ? `${sorter_label} ${cap.sorter_speed}/s ✓`
                 : `⚠ 至少需 ${cap.required_sorter.name}，推荐 ${cap.suggested_sorter.name}`}
         </small>
     </div>;
