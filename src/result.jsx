@@ -163,7 +163,8 @@ const isEqual = (obj1, obj2) => {
 
 /**
  * 单行「物流上限」：按全局选择的传送带 / 分拣器等级，
- * 注明该产线一条传送带最多能串联多少台当前工厂。
+ * 注明每种原料一条进料带、出料单独一条带时，产线最多能串联多少台当前工厂。
+ * 每条流每台固定 1 个分拣器，分拣器不足时提示升级档位而不是增加分拣器数量。
  * 也供 natural_production_line.jsx 的「现有产线」行复用。
  */
 export function LogisticsCapacity({recipe, factory_info, scheme_recipe, game_data, settings}) {
@@ -174,12 +175,15 @@ export function LogisticsCapacity({recipe, factory_info, scheme_recipe, game_dat
 
     const limit_text = cap.belt_limit > 9999 ? '≥9999' : `≤ ${cap.belt_limit}`;
     const tooltip = [
-        `传送带：${belt.name} ${cap.belt_speed} 个/s`,
-        `单台最紧物料：${cap.bottleneck_item} ${cap.max_rate.toFixed(3)} 个/s`,
+        `传送带：${belt.name} ${cap.belt_speed} 个/s（每种原料各一条进料带，出料单独一条带）`,
+        `瓶颈：${cap.bottleneck_item} ${cap.bottleneck_kind}带 ${cap.max_rate.toFixed(3)} 个/s`,
         `一条带最多串联 ${cap.belt_limit} 台 ${cap.factory_name}`,
-        `分拣器：${sorter.name} ${cap.sorter_speed} 个/s（按 1 格距离）`,
-        cap.sorter_ok ? '单台 1 个分拣器即可' : `单台需 ${cap.sorter_per_machine} 个分拣器`,
-        '口径：输入带与输出带取同一上限；混带、多带并联未计入。',
+        `共需 ${cap.input_belt_count} 条进料带 + ${cap.output_belt_count} 条出料带`,
+        `分拣器：${sorter.name} ${cap.sorter_speed} 个/s（1 格距离，每条流每台固定 1 个）`,
+        cap.sorter_ok
+            ? '当前分拣器可让设备满速'
+            : `分拣器等级不足，设备无法满速；至少需 ${cap.required_sorter.name}，推荐 ${cap.suggested_sorter.name}`,
+        '口径：各条流分别计算并取最小上限；混带、多带并联、2~3 格分拣器降速未计入。',
     ].join('\n');
 
     return <div className="text-nowrap" title={tooltip} style={{lineHeight: 1.3}}>
@@ -188,12 +192,15 @@ export function LogisticsCapacity({recipe, factory_info, scheme_recipe, game_dat
             <small className="ms-1">{cap.factory_name}</small>
         </div>
         <small className="text-muted d-block logistics-detail">
-            单台 {cap.max_rate.toFixed(2)}/s · {belt.name} {cap.belt_speed}/s
+            {cap.bottleneck_item} {cap.bottleneck_kind}带 {cap.max_rate.toFixed(2)}/s · {belt.name} {cap.belt_speed}/s
+        </small>
+        <small className="text-muted d-block logistics-detail">
+            进料带 {cap.input_belt_count} 条 · 出料带 {cap.output_belt_count} 条
         </small>
         <small className={`d-block logistics-detail ${cap.sorter_ok ? 'text-muted' : 'text-warning'}`}>
             {cap.sorter_ok
                 ? `${sorter.name} ${cap.sorter_speed}/s ✓`
-                : `⚠ 每台需 ${cap.sorter_per_machine} 个${sorter.name}`}
+                : `⚠ 至少需 ${cap.required_sorter.name}，推荐 ${cap.suggested_sorter.name}`}
         </small>
     </div>;
 }

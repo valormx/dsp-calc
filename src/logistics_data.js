@@ -5,11 +5,15 @@
  *  - 传送带：6 / 12 / 30 个每秒；解锁「集装物流系统」后蓝带可 4 堆叠 → 120 个每秒。
  *  - 分拣器（1 格距离）：1.5 / 3 / 6 / 10 个货物每秒；集装分拣器可搬运 4 堆叠 → 40 个每秒。
  *
- * 计算口径（一条直线产线，主带送料/汇料，每台设备由分拣器取放料）：
+ * 计算口径（按实际布局：每种原料各一条进料带，出料单独一条带）：
  *   1. 单台设备每秒完成配方轮数 = 建筑倍率 / 配方时间(秒)，再按增产模式修正。
- *   2. 对配方的每种原料与产物算出「单台每秒吞吐」，取其中最大值作为瓶颈速率。
- *   3. 一条传送带最多串联台数 = floor(带速 / 瓶颈速率)，输入带与输出带按同一上限保守估计。
- *   4. 分拣器等级决定单台能否被喂饱：瓶颈速率 > 分拣器速率时，每台需要多个分拣器。
+ *   2. 每条「物料流」= 一种原料的进料 或 一种产物的出料，各自独占一条传送带；
+ *      该流单台每秒吞吐 = 配方中该物料数量 × 每秒轮数（出料再乘增产倍率）。
+ *      同一物品若既是原料又是产物，也按两条独立的带分别计算，不合并。
+ *   3. 每条流上每台设备固定配 1 个分拣器（1 格距离），不存在一条流配多个分拣器的情况：
+ *      - 带速约束：N × 单台速率 ≤ 带速 → 该流最多串联 floor(带速 / 单台速率) 台。
+ *      - 分拣器约束：单台速率 ≤ 分拣器速率；否则设备无法满速，必须升级分拣器等级。
+ *   4. 整条产线的上限 = 各条流中最小的带上限，并单独注明瓶颈是哪条带。
  *
  * 注意：混带、多带并联、分拣器跨 2~3 格降速等情况不在估算范围内。
  */
@@ -85,36 +89,64 @@ export function compute_line_capacity(recipe, factory_info, scheme_recipe, game_
         // 模式 4（分馏塔增产）按游戏内独立公式计算，此处保持保守估计。
     }
 
-    // 每种物料在单台设备上的每秒吞吐（输入带与输出带分开考虑，取最紧的一路）。
-    const rates = {};
+    // 每条物料流独占一条带：一种原料一条进料带，一种产物一条出料带。
+    const flows = [];
     for (const [name, count] of Object.entries(recipe['原料'] || {})) {
-        rates[name] = (rates[name] || 0) + Number(count) * cycles_per_sec;
+        flows.push({name, kind: '进料', rate: Number(count) * cycles_per_sec});
     }
     for (const [name, count] of Object.entries(recipe['产物'] || {})) {
-        rates[name] = (rates[name] || 0) + Number(count) * cycles_per_sec * output_multiplier;
+        flows.push({name, kind: '出料', rate: Number(count) * cycles_per_sec * output_multiplier});
     }
-
-    let max_rate = 0;
-    let bottleneck_item = '';
-    for (const [name, rate] of Object.entries(rates)) {
-        if (rate > max_rate) {
-            max_rate = rate;
-            bottleneck_item = name;
-        }
-    }
-    if (!(max_rate > 0)) return null;
+    if (flows.length === 0) return null;
 
     const belt_speed = belt.speed;
     const sorter_speed = sorter.speed * sorter.stack;
+
+    // 能喂饱某条流的最低分拣器档位；连最高档都不够时返回最高档。
+    function min_sorter_for(rate) {
+        return SORTER_LEVELS.find(x => x.speed * x.stack >= rate - 1e-9)
+            || SORTER_LEVELS[SORTER_LEVELS.length - 1];
+    }
+
+    for (const flow of flows) {
+        flow.belt_limit = flow.rate > 0 ? Math.floor(belt_speed / flow.rate + 1e-9) : Infinity;
+        flow.sorter_ok = flow.rate <= sorter_speed + 1e-9;
+        flow.min_sorter = min_sorter_for(flow.rate);
+    }
+
+    let bottleneck = flows[0];
+    let belt_limit = Infinity;
+    for (const flow of flows) {
+        if (flow.rate > bottleneck.rate) bottleneck = flow;
+        if (flow.belt_limit < belt_limit) belt_limit = flow.belt_limit;
+    }
+    if (!(bottleneck.rate > 0) || !Number.isFinite(belt_limit)) return null;
+
+    const limiting_flows = flows.filter(f => !f.sorter_ok);
+    // 最低要求 = 所有流里要求最高的那一档；推荐档位再高一档，留出余量
+    // （实践中 Mk.III 制造台不会只配刚好够用的分拣器，而是配极速分拣器）。
+    const required_sorter = flows.reduce(
+        (highest, f) => f.min_sorter.value > highest.value ? f.min_sorter : highest,
+        SORTER_LEVELS[0]);
+    const suggested_sorter = SORTER_LEVELS.find(x => x.value === required_sorter.value + 1)
+        || required_sorter;
+
     return {
         factory_name: factory_info['名称'],
         belt_speed,
         sorter_speed,
-        max_rate,
-        bottleneck_item,
+        flows,
+        input_belt_count: Object.keys(recipe['原料'] || {}).length,
+        output_belt_count: Object.keys(recipe['产物'] || {}).length,
+        max_rate: bottleneck.rate,
+        bottleneck_item: bottleneck.name,
+        bottleneck_kind: bottleneck.kind,
         cycles_per_sec,
-        belt_limit: Math.floor(belt_speed / max_rate + 1e-9),
-        sorter_per_machine: Math.ceil(max_rate / sorter_speed - 1e-9),
-        sorter_ok: max_rate <= sorter_speed + 1e-9,
+        belt_limit,
+        // 分拣器不足时设备无法满速，只能升级分拣器，不存在「一台配多个爪」的方案
+        sorter_ok: limiting_flows.length === 0,
+        limiting_flows,
+        required_sorter,
+        suggested_sorter,
     };
 }
