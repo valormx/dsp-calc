@@ -5,8 +5,10 @@ import {
     GameInfoContext,
     GameInfoSetterContext,
     SchemeDataSetterContext,
+    SettingsContext,
     SettingsSetterContext
 } from './contexts.jsx';
+import {BELT_OPTIONS, get_belt_level, get_sorter_level, SORTER_OPTIONS} from './logistics_data.js';
 import {NeedsList, NeedsListStorage} from './needs_list.jsx';
 import {Result} from './result.jsx';
 import {init_scheme_data, SchemeStorage} from './scheme_data.jsx';
@@ -145,6 +147,25 @@ function GameVersion({needs_list, set_needs_list}) {
     </div>;
 }
 
+/** 全局物流等级选择：传送带 / 分拣器（分拣器按 1 格距离计算）。 */
+function LogisticsSettings() {
+    const settings = useContext(SettingsContext);
+    const set_settings = useContext(SettingsSetterContext);
+    const belt = get_belt_level(settings.belt_level);
+    const sorter = get_sorter_level(settings.sorter_level);
+    return <div className="d-flex gap-2 align-items-center flex-wrap mt-2">
+        <span className="text-nowrap small">传送带</span>
+        <Select size="small" style={{minWidth: 215}} options={BELT_OPTIONS}
+                value={settings.belt_level} onChange={v => set_settings({belt_level: v})}/>
+        <span className="text-nowrap small">分拣器（1格距离）</span>
+        <Select size="small" style={{minWidth: 225}} options={SORTER_OPTIONS}
+                value={settings.sorter_level} onChange={v => set_settings({sorter_level: v})}/>
+        <span className="text-nowrap small text-muted">
+            当前：{belt.name} {belt.speed}/s · {sorter.name} {sorter.speed * sorter.stack}/s
+        </span>
+    </div>;
+}
+
 function UserSettings({show}) {
     let class_show = show ? "" : "d-none";
     return <div className={`d-flex gap-3 ${class_show}`}>
@@ -195,6 +216,8 @@ function AppWithContexts() {
                     <span className="compact-hide-text">采矿参数 & 其他设置</span>
                 </button>
             </div>
+            {/*传送带、分拣器等级（全局，影响每条产线的串联上限）*/}
+            <LogisticsSettings/>
             {/*采矿参数&其他设置*/}
             <UserSettings show={misc_show}/>
             {/*添加需求、批量预设*/}

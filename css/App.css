@@ -362,6 +362,7 @@ body > .p-3 {
     .result-table th:nth-child(6) { width: 110px; } /* 增产模式 180→110 */
     .result-table th:nth-child(7) { width: 90px; }  /* 增产剂   160→90  */
     .result-table th:nth-child(8) { width: 100px; } /* 工厂类型 170→100 */
+    .result-table th:nth-child(9) { width: 150px; } /* 物流上限 190→150 */
 
     /* 物品名称列隐藏文字 */
     .result-table .item-name-text {
@@ -403,6 +404,7 @@ body > .p-3 {
     .result-table th:nth-child(6) { width: 90px; }  /* 增产模式 110→90 */
     .result-table th:nth-child(7) { width: 72px; }  /* 增产剂 90→72 */
     .result-table th:nth-child(8) { width: 80px; }  /* 工厂类型 100→80 */
+    .result-table th:nth-child(9) { width: 110px; } /* 物流上限 150→110 */
 
     /* 配方选取中只显示最简内容 */
     .recipe-compact-inputs .recipe-output-section {
@@ -477,6 +479,11 @@ body > .p-3 {
         font-size: 0.72em;
     }
 
+    /* 移动端物流上限列只保留主数值 */
+    .logistics-detail {
+        display: none;
+    }
+
     /* 移动端表格列宽极限压缩 */
     .result-table th:nth-child(1) { width: 36px; }
     .result-table th:nth-child(2) { width: 40px; }
@@ -486,6 +493,7 @@ body > .p-3 {
     .result-table th:nth-child(6) { width: 72px; }
     .result-table th:nth-child(7) { width: 56px; }
     .result-table th:nth-child(8) { width: 64px; }
+    .result-table th:nth-child(9) { width: 76px; }
 
     /* 移动端隐藏生产策略/需求列表的文字标签 */
     .storage-label {
@@ -536,6 +544,7 @@ body > .p-3 {
     .result-table th:nth-child(6) { width: 56px; }
     .result-table th:nth-child(7) { width: 44px; }
     .result-table th:nth-child(8) { width: 50px; }
+    .result-table th:nth-child(9) { width: 60px; }
 
     /* ── 需求3：批量预设行整体缩小 ── */
     .batch-setting-container {

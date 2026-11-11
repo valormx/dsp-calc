@@ -6,6 +6,7 @@ import {ItemIcon} from './icon';
 import {NplRows} from './natural_production_line';
 import {HorizontalMultiButtonSelect, Recipe} from './recipe';
 import {AutoSizedInput} from './ui_components/auto_sized_input.jsx';
+import {compute_line_capacity, get_belt_level, get_sorter_level} from './logistics_data.js';
 
 const ValueWithDifference = ({currentValue, previousValue}) => {
     const global_state = useContext(GlobalStateContext);
@@ -159,6 +160,43 @@ const isEqual = (obj1, obj2) => {
 
     return true;
 };
+
+/**
+ * 单行「物流上限」：按全局选择的传送带 / 分拣器等级，
+ * 注明该产线一条传送带最多能串联多少台当前工厂。
+ * 也供 natural_production_line.jsx 的「现有产线」行复用。
+ */
+export function LogisticsCapacity({recipe, factory_info, scheme_recipe, game_data, settings}) {
+    const belt = get_belt_level(settings.belt_level);
+    const sorter = get_sorter_level(settings.sorter_level);
+    const cap = compute_line_capacity(recipe, factory_info, scheme_recipe, game_data, settings, belt, sorter);
+    if (!cap) return <span className="text-muted">—</span>;
+
+    const limit_text = cap.belt_limit > 9999 ? '≥9999' : `≤ ${cap.belt_limit}`;
+    const tooltip = [
+        `传送带：${belt.name} ${cap.belt_speed} 个/s`,
+        `单台最紧物料：${cap.bottleneck_item} ${cap.max_rate.toFixed(3)} 个/s`,
+        `一条带最多串联 ${cap.belt_limit} 台 ${cap.factory_name}`,
+        `分拣器：${sorter.name} ${cap.sorter_speed} 个/s（按 1 格距离）`,
+        cap.sorter_ok ? '单台 1 个分拣器即可' : `单台需 ${cap.sorter_per_machine} 个分拣器`,
+        '口径：输入带与输出带取同一上限；混带、多带并联未计入。',
+    ].join('\n');
+
+    return <div className="text-nowrap" title={tooltip} style={{lineHeight: 1.3}}>
+        <div>
+            <strong className={cap.belt_limit === 0 ? 'text-danger' : ''}>{limit_text} 台</strong>
+            <small className="ms-1">{cap.factory_name}</small>
+        </div>
+        <small className="text-muted d-block logistics-detail">
+            单台 {cap.max_rate.toFixed(2)}/s · {belt.name} {cap.belt_speed}/s
+        </small>
+        <small className={`d-block logistics-detail ${cap.sorter_ok ? 'text-muted' : 'text-warning'}`}>
+            {cap.sorter_ok
+                ? `${sorter.name} ${cap.sorter_speed}/s ✓`
+                : `⚠ 每台需 ${cap.sorter_per_machine} 个${sorter.name}`}
+        </small>
+    </div>;
+}
 
 export function Result({needs_list, set_needs_list, show_ore_popup, set_show_ore_popup, show_building_popup, set_show_building_popup}) {
     const global_state = useContext(GlobalStateContext);
@@ -355,7 +393,8 @@ export function Result({needs_list, set_needs_list, show_ore_popup, set_show_ore
             <div key={from} className="text-nowrap">+{amount.toFixed(fixed_num)} (<ItemIcon item={from} size={is_mobile ? 18 : 26}/>)
             </div>
         );
-        let factory_name = game_data.factory_data[game_data.recipe_data[recipe_id]["设施"]][scheme_data.scheme_for_recipe[recipe_id]["建筑"]]["名称"];
+        let factory_info = game_data.factory_data[game_data.recipe_data[recipe_id]["设施"]][scheme_data.scheme_for_recipe[recipe_id]["建筑"]];
+        let factory_name = factory_info["名称"];
         let is_mineralized = i in mineralize_list;
         let row_class = is_mineralized ? "table-secondary" : "";
 
@@ -468,6 +507,14 @@ export function Result({needs_list, set_needs_list, show_ore_popup, set_show_ore
             <td><FactorySelect recipe_id={recipe_id} onChange={change_factory}
                                choice={scheme_data.scheme_for_recipe[recipe_id]["建筑"]}
                                icon_size={mob_btn_icon}/></td>
+            {/* 物流上限：当前传送带一条最多能带多少台该工厂 */}
+            <td className="text-center">
+                {is_mineralized ? <span className="text-muted">—</span> :
+                    <LogisticsCapacity recipe={game_data.recipe_data[recipe_id]}
+                                       factory_info={factory_info}
+                                       scheme_recipe={scheme_data.scheme_for_recipe[recipe_id]}
+                                       game_data={game_data} settings={settings}/>}
+            </td>
         </tr>);
     }
 
@@ -580,6 +627,7 @@ export function Result({needs_list, set_needs_list, show_ore_popup, set_show_ore
                 <th width={180}>增产模式</th>
                 <th width={160}>增产剂</th>
                 <th width={170}>工厂类型</th>
+                <th width={190} title="按当前传送带 / 分拣器等级，一条带最多能串联多少台该产线的工厂">物流上限</th>
             </tr>
             </thead>
             <tbody className="table-group-divider">

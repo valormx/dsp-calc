@@ -2,6 +2,7 @@ import {createContext, useEffect, useState} from 'react';
 import {GameInfo, GlobalState} from './global_state';
 import {init_scheme_data} from './scheme_data';
 import {default_game_data} from "./GameData.jsx";
+import {DEFAULT_BELT_LEVEL, DEFAULT_SORTER_LEVEL} from "./logistics_data.js";
 import {useSetState} from "ahooks";
 
 /** set_game_name_and_data(game_name, game_data) */
@@ -36,6 +37,9 @@ const DEFAULT_SETTINGS = {
 
     is_time_unit_minute: true,
     fixed_num: 2,
+    // 全局物流等级（自动保存在 auto_settings，不随生产策略切换）
+    belt_level: DEFAULT_BELT_LEVEL,
+    sorter_level: DEFAULT_SORTER_LEVEL,
     stack_research_lab: 15,
     proliferate_itself: true,
     acc_rate: 1.0,
