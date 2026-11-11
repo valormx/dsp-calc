@@ -1,10 +1,5 @@
 # html版戴森球量化计算器
 
-![](https://img.shields.io/github/license/valormx/dsp-calc)
-![](https://img.shields.io/github/stars/valormx/dsp-calc)
-![Contributors](https://img.shields.io/github/contributors/valormx/dsp-calc)
-![GitHub Release](https://img.shields.io/github/v/release/valormx/dsp-calc)
-
 ## 在线使用方式
 
 - https://valormx.github.io/dsp-calc/
